@@ -5,6 +5,10 @@ This component allows you to "inject" any raw file into the firmware as a progme
 ## Configuration
 
 ```yaml
+external_components:
+  - source: github://jesserockz/esphome-components
+    components: [file]
+
 file:
   - id: my_file
     path: my_file.wav
