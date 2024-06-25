@@ -1,0 +1,17 @@
+esphome:
+  name: test
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+external_components:
+  - source: ../../components
+    components: file
+
+file:
+  - id: bloop_local
+    file: bloop.wav
+  # - id: bloop_web
+  #   file: https://github.com/jesserockz/esphome-components/raw/main/tests/file/bloop.wav
