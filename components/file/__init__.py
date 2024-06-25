@@ -1,7 +1,7 @@
 import hashlib
 import logging
-import os
 from pathlib import Path
+from magic import Magic
 
 import esphome.codegen as cg
 import esphome.config_validation as cv
@@ -104,20 +104,20 @@ CONFIG_SCHEMA = cv.Schema(
 )
 
 
-def _load_wav_file(path: str) -> bytes:
-    with open(path, "br") as f:
-        header = []
-        while True:
-            byte = f.read(1)
-            if byte == b"":
-                raise ValueError("Could not find data in wav file")
-            header.append(byte)
-            if header[-4:] == [b"d", b"a", b"t", b"a"]:
-                break
-        f.read(2)  # Skip the two content length bytes
-
-        data = f.read()
-    return data
+def _trim_wav_file(data: bytes) -> bytes:
+    header = []
+    index = 0
+    length = len(data)
+    while index < length:
+        byte = data[index : index + 1]
+        if byte == b"":
+            raise ValueError("Could not find data in wav file")
+        header.append(byte)
+        index += 1
+        if header[-4:] == [b"d", b"a", b"t", b"a"] or index > 100:
+            break
+    index += 2
+    return data[index:]
 
 
 async def to_code(config):
@@ -125,11 +125,17 @@ async def to_code(config):
     file_source = conf_file[CONF_TYPE]
     if file_source == TYPE_LOCAL:
         path = CORE.relative_config_path(conf_file[CONF_PATH])
-    else:
+    elif file_source == TYPE_WEB:
         path = _compute_local_file_path(conf_file)
 
-    data: bytes = []
-    if os.path.basename(path).endswith(".wav"):
-        data = _load_wav_file(path)
+    with open(path, "rb") as f:
+        data = f.read()
+
+    magic = Magic(mime=True)
+    file_type = magic.from_buffer(data)
+
+    if "wav" in file_type:
+        data = _trim_wav_file(data)
+
     rhs = [HexInt(x) for x in data]
     cg.progmem_array(config[CONF_ID], rhs)
