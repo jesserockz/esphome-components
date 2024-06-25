@@ -33,6 +33,7 @@ jobs:
           done
           matrix="$(echo ${matrix} | jq -R -s -c 'split(",")[:-1]')"
           echo "tests=$matrix" >> $GITHUB_OUTPUT
+
   test:
     name: Test ${{ matrix.test }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -48,11 +49,16 @@ jobs:
 
       - name: Set up Python
         uses: actions/setup-python@v5.1.0
+        with:
+          python-version: 3.12
 
-      - name: Install dependencies
+      - name: Install ESPHome
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install esphome
+
+      - name: Install extra dependencies
+        run: pip install -r tests/requirements.txt
 
       - name: Run tests
         run: |
