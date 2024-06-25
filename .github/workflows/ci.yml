@@ -51,4 +51,4 @@ jobs:
 
       - name: Run tests
         run: |
-          esphome run ${{ matrix.test }}
+          esphome run tests/${{ matrix.test }}
