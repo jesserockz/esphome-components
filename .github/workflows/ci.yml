@@ -57,8 +57,13 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip install esphome
 
-      - name: Install extra dependencies
-        run: pip install -r tests/requirements.txt
+      - name: Install python-magic-bin
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: pip install python-magic-bin==0.4.14
+
+      - name: Install libmagic
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: brew install libmagic
 
       - name: Run tests
         run: |
