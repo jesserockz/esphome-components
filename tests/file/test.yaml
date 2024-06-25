@@ -13,5 +13,5 @@ external_components:
 file:
   - id: bloop_local
     file: bloop.wav
-  # - id: bloop_web
-  #   file: https://github.com/jesserockz/esphome-components/raw/main/tests/file/bloop.wav
+  - id: bloop_web
+    file: https://github.com/jesserockz/esphome-components/raw/main/tests/file/bloop.wav

@@ -11,7 +11,7 @@ external_components:
 
 file:
   - id: my_file
-    path: my_file.wav
+    file: my_file.wav
 ```
 
 ## File types
@@ -31,7 +31,9 @@ speaker:
 
 file:
   - id: my_file
-    path: my_file.wav
+    file: my_file.wav
+  - id: my_remote_wav
+    file: https://example.com/my_file.wav
 
 button:
   - platform: template
@@ -39,3 +41,9 @@ button:
     on_press:
       - lambda: id(my_speaker).play(id(my_file), sizeof(id(my_file)));
 ```
+
+### Other files
+
+Any other file type will be included as is as a raw byte array in the firmware.
+If there are any certain filetypes that need to be manipulated first, please
+make a pull request to add this.
