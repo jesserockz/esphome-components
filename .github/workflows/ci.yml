@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  # yamllint disable-line rule:line-length
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  information:
+    name: Gather test files
+    runs-on: ubuntu-latest
+    outputs:
+      tests: ${{ steps.get-tests.outputs.tests }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.7
+
+      - name: Gather test files
+        id: get-tests
+        run: |
+          matrix=()
+          for file in tests/*/*.yaml; do
+            component=${file#tests/}
+            matrix="$matrix$component,"
+          done
+          matrix="$(echo ${matrix} | jq -R -s -c 'split(",")[:-1]')"
+          echo "tests=$matrix" >> $GITHUB_OUTPUT
+
+  test:
+    name: Test ${{ matrix.test }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    needs: information
+    strategy:
+      fail-fast: false
+      matrix:
+        test: ${{fromJson(needs.information.outputs.tests)}}
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.7
+
+      - name: Set up Python
+        uses: actions/setup-python@v5.1.0
+        with:
+          python-version: 3.12
+
+      - name: Install ESPHome
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install esphome
+
+      - name: Install python-magic-bin
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: pip install python-magic-bin==0.4.14
+
+      - name: Install libmagic
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: brew install libmagic
+
+      - name: Run tests
+        run: |
+          esphome compile tests/${{ matrix.test }}
