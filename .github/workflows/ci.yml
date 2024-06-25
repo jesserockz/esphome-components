@@ -34,12 +34,14 @@ jobs:
           matrix="$(echo ${matrix} | jq -R -s -c 'split(",")[:-1]')"
           echo "tests=$matrix" >> $GITHUB_OUTPUT
   test:
-    name: Test ${{ matrix.test }}
-    runs-on: ubuntu-latest
+    name: Test ${{ matrix.test }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     needs: information
     strategy:
+      fail-fast: false
       matrix:
         test: ${{fromJson(needs.information.outputs.tests)}}
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4.1.7
