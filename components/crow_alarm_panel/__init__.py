@@ -11,7 +11,7 @@ from esphome.const import (
     CONF_OUTPUTS,
 )
 
-AUTO_LOAD = ["binary_sensor", "text_sensor"]
+AUTO_LOAD = ["binary_sensor", "text_sensor", "switch"]
 MULTI_CONF = True
 
 CONF_ARMED_STATE = "armed_state"
