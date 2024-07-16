@@ -1,0 +1,30 @@
+esphome:
+  name: test
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+wifi:
+  ap:
+
+external_components:
+  - source: ../../components
+    components: udp_audio
+
+i2s_audio:
+  - id: i2s_audio_hub
+    i2s_lrclk_pin: GPIO33
+    i2s_bclk_pin: GPIO19
+
+microphone:
+  - platform: i2s_audio
+    id: my_microphone
+    i2s_din_pin: GPIO23
+    adc_type: external
+    pdm: true
+
+udp_audio:
+  ip_address: 10.10.10.10
+  port: 6056
