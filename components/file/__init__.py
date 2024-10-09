@@ -1,10 +1,10 @@
 import hashlib
 import logging
 from pathlib import Path
-from magic import Magic
 
 import esphome.codegen as cg
 import esphome.config_validation as cv
+from esphome import external_files
 from esphome.const import (
     CONF_FILE,
     CONF_ID,
@@ -12,9 +12,7 @@ from esphome.const import (
     CONF_TYPE,
     CONF_URL,
 )
-
-from esphome.core import HexInt, CORE
-from esphome import external_files
+from esphome.core import CORE, HexInt
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -131,8 +129,18 @@ async def to_code(config):
     with open(path, "rb") as f:
         data = f.read()
 
-    magic = Magic(mime=True)
-    file_type = magic.from_buffer(data)
+    try:
+        import puremagic
+
+        file_type = puremagic.from_string(data, mime=True)
+    except ImportError:
+        try:  # magic removed from ESPHome in 2024.10.0 and replaced with puremagic
+            from magic import Magic
+
+            magic = Magic(mime=True)
+            file_type = magic.from_buffer(data)
+        except ImportError:
+            raise ImportError("Please install puremagic")
 
     if "wav" in file_type:
         data = _trim_wav_file(data)
