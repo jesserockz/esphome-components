@@ -2,11 +2,10 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import microphone
 from esphome.components.network import IPAddress
-
 from esphome.const import CONF_ID, CONF_IP_ADDRESS, CONF_MICROPHONE, CONF_PORT
 
 AUTO_LOAD = ["socket"]
-DEPENDENCIES = ["microphone"]
+DEPENDENCIES = ["microphone", "network"]
 
 udp_audio_ns = cg.esphome_ns.namespace("udp_audio")
 UDPAudioComponent = udp_audio_ns.class_("UDPAudioComponent", cg.Component)
