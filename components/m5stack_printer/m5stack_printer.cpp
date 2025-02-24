@@ -11,6 +11,7 @@ static const uint8_t ESC = 0x1B;
 static const uint8_t GS = 0x1D;
 
 static const uint8_t INIT_PRINTER_CMD[] = {ESC, 0x40};
+static const uint8_t WAKEUP_CMD[] = {ESC, 0x38, 0, 0};
 static const uint8_t BAUD_RATE_9600_CMD[] = {ESC, '#', '#', 'S', 'B', 'D', 'R', 0x80, 0x25, 0x00, 0x00};
 static const uint8_t BAUD_RATE_115200_CMD[] = {ESC, '#', '#', 'S', 'B', 'D', 'R', 0x00, 0xC2, 0x01, 0x00};
 
@@ -42,7 +43,14 @@ void M5StackPrinterDisplay::setup() {
   // this->write_array(INIT_PRINTER_CMD, sizeof(INIT_PRINTER_CMD));
 }
 
-void M5StackPrinterDisplay::init_() { this->write_array(INIT_PRINTER_CMD, sizeof(INIT_PRINTER_CMD)); }
+void M5StackPrinterDisplay::init_() {
+  if (this->send_wakeup_) {
+    this->write_byte(0xFF);
+    delay(50);
+    this->write_array(WAKEUP_CMD, sizeof(WAKEUP_CMD));
+  }
+  this->write_array(INIT_PRINTER_CMD, sizeof(INIT_PRINTER_CMD));
+}
 
 void M5StackPrinterDisplay::print_text(std::string text, uint8_t font_size) {
   this->init_();

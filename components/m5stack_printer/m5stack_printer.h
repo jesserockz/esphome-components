@@ -47,6 +47,8 @@ class M5StackPrinterDisplay : public display::DisplayBuffer, public uart::UARTDe
 
   void print_barcode(std::string barcode, BarcodeType type);
 
+  void set_send_wakeup(bool send_wakeup) { this->send_wakeup_ = send_wakeup; }
+
  protected:
   void draw_absolute_pixel_internal(int x, int y, Color color) override;
   size_t get_buffer_length_() { return size_t(this->get_width_internal()) * size_t(this->get_height_internal()) / 8; }
@@ -57,6 +59,7 @@ class M5StackPrinterDisplay : public display::DisplayBuffer, public uart::UARTDe
   std::queue<std::vector<uint8_t>> queue_{};
   int height_{0};
   bool ready_{false};
+  bool send_wakeup_{false};
 };
 
 template<typename... Ts>

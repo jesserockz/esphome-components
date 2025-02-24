@@ -1,8 +1,8 @@
-import esphome.config_validation as cv
+from esphome import automation
 import esphome.codegen as cg
 from esphome.components import display, uart
+import esphome.config_validation as cv
 from esphome.const import CONF_HEIGHT, CONF_ID, CONF_LAMBDA
-from esphome import automation
 
 DEPENDENCIES = ["uart"]
 
@@ -18,12 +18,14 @@ M5StackPrinterPrintTextAction = m5stack_printer_ns.class_(
 
 CONF_FONT_SIZE = "font_size"
 CONF_TEXT = "text"
+CONF_SEND_WAKEUP = "send_wakeup"
 
 CONFIG_SCHEMA = (
     display.FULL_DISPLAY_SCHEMA.extend(
         {
             cv.GenerateID(): cv.declare_id(M5StackPrinterDisplay),
             cv.Required(CONF_HEIGHT): cv.uint16_t,
+            cv.Optional(CONF_SEND_WAKEUP, default=False): cv.boolean,
         }
     )
     .extend(
@@ -39,6 +41,7 @@ async def to_code(config):
     await uart.register_uart_device(var, config)
 
     cg.add(var.set_height(config[CONF_HEIGHT]))
+    cg.add(var.set_send_wakeup(config[CONF_SEND_WAKEUP]))
 
     if lambda_config := config.get(CONF_LAMBDA):
         lambda_ = await cg.process_lambda(
