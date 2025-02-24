@@ -29,6 +29,7 @@ class M5StackPrinterDisplay : public display::DisplayBuffer, public uart::UARTDe
   void setup() override;
   void loop() override;
   void update() override;
+  bool can_proceed() override { return this->ready_; }
 
   void write_to_device_();
 
@@ -55,6 +56,7 @@ class M5StackPrinterDisplay : public display::DisplayBuffer, public uart::UARTDe
 
   std::queue<std::vector<uint8_t>> queue_{};
   int height_{0};
+  bool ready_{false};
 };
 
 template<typename... Ts>

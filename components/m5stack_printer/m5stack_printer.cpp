@@ -29,7 +29,10 @@ static const uint8_t BYTES_PER_LOOP = 120;
 void M5StackPrinterDisplay::setup() {
   this->init_internal_(this->get_buffer_length_());
 
-  this->init_();
+  this->set_timeout(500, [this]() {
+    this->init_();
+    this->ready_ = true;
+  });
   // this->write_array(BAUD_RATE_115200_CMD, sizeof(BAUD_RATE_115200_CMD));
   // delay(10);
   // this->parent_->set_baud_rate(115200);
