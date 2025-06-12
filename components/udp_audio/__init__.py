@@ -27,4 +27,4 @@ async def to_code(config):
     mic = await cg.get_variable(config[CONF_MICROPHONE])
     cg.add(var.set_microphone(mic))
 
-    cg.add(var.set_address(IPAddress(*config[CONF_IP_ADDRESS].args), config[CONF_PORT]))
+    cg.add(var.set_address(IPAddress(str(config[CONF_IP_ADDRESS])), config[CONF_PORT]))
