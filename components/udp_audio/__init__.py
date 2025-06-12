@@ -14,7 +14,7 @@ UDPAudioComponent = udp_audio_ns.class_("UDPAudioComponent", cg.Component)
 CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(UDPAudioComponent),
-        cv.Required(CONF_IP_ADDRESS): cv.ipv4,
+        cv.Required(CONF_IP_ADDRESS): cv.ipv4address,
         cv.Required(CONF_PORT): cv.port,
         cv.GenerateID(CONF_MICROPHONE): cv.use_id(microphone.Microphone),
     }
