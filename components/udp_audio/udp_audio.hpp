@@ -21,7 +21,7 @@ class UDPAudioComponent : public Component {
       return;
     }
 
-    this->microphone_->add_data_callback([this](const std::vector<int16_t> &data) { this->send_data_(data); });
+    this->microphone_->add_data_callback([this](const std::vector<uint8_t> &data) { this->send_data_(data); });
   };
   void set_microphone(microphone::Microphone *microphone) { this->microphone_ = microphone; }
 
@@ -33,9 +33,9 @@ class UDPAudioComponent : public Component {
   float get_setup_priority() const override { return setup_priority::AFTER_WIFI; }
 
  protected:
-  void send_data_(const std::vector<int16_t> &data) {
-    this->socket_->sendto(data.data(), data.size() * sizeof(int16_t), 0,
-                          reinterpret_cast<const sockaddr *>(&this->dest_addr_), sizeof(this->dest_addr_));
+  void send_data_(const std::vector<uint8_t> &data) {
+    this->socket_->sendto(data.data(), data.size(), 0, reinterpret_cast<const sockaddr *>(&this->dest_addr_),
+                          sizeof(this->dest_addr_));
   }
   bool setup_udp_socket_() {
     this->socket_ = socket::socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
@@ -58,7 +58,7 @@ class UDPAudioComponent : public Component {
   }
   std::unique_ptr<socket::Socket> socket_ = nullptr;
   microphone::Microphone *microphone_;
-  struct sockaddr_storage dest_addr_ {};
+  struct sockaddr_storage dest_addr_{};
 };
 
 }  // namespace udp_audio
