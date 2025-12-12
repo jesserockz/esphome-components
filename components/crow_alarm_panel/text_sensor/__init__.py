@@ -11,7 +11,7 @@ TextSensor = text_sensor_ns.class_("TextSensor", cg.EntityBase)
 
 TYPES = ["armed_state"]
 
-CONFIG_SCHEMA = text_sensor.TEXT_SENSOR_SCHEMA.extend(
+CONFIG_SCHEMA = text_sensor.text_sensor_schema(TextSensor).extend(
     {
         cv.GenerateID(): cv.declare_id(TextSensor),
         cv.GenerateID(CONF_CROW_ALARM_PANEL_ID): cv.use_id(CrowAlarmPanel),
