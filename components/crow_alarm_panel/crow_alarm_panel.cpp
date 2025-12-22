@@ -277,30 +277,20 @@ void CrowAlarmPanel::loop() {
   
   if (!this->tx_buffer_.empty() && !this->store_.data) {
     InterruptLock lock;
-    // Use open-drain mode - only pull LOW, let pull-up handle HIGH
-    this->clock_pin_->pin_mode(gpio::FLAG_OUTPUT_OPEN_DRAIN);
-    this->data_pin_->pin_mode(gpio::FLAG_OUTPUT_OPEN_DRAIN);
-    
-    // Ensure clock starts LOW
-    this->clock_pin_->digital_write(false);
-    delayMicroseconds(100);
-    
+    // ORIGINAL DEV'S EXACT METHOD - push-pull outputs
+    this->clock_pin_->pin_mode(gpio::FLAG_OUTPUT);
+    this->data_pin_->pin_mode(gpio::FLAG_OUTPUT);
     std::vector<uint8_t> to_send = this->tx_buffer_[0];
     std::string s;
     this->tx_buffer_.erase(this->tx_buffer_.begin());
     for (uint8_t i = 0; i < to_send.size(); i++) {
       for (uint8_t j = 0; j < 8; j++) {
-        // Set data FIRST (before clock edge)
-        this->data_pin_->digital_write(to_send[i] & (1 << j));
-        delayMicroseconds(500);  // Let data settle (longer for slow shifter)
-        
-        // Pulse clock: LOW -> HIGH -> LOW
+        // ORIGINAL DEV'S EXACT TIMING
         this->clock_pin_->digital_write(true);
-        delayMicroseconds(500);  // Hold high (longer for slow shifter)
-        this->clock_pin_->digital_write(false);  // Falling edge - receiver samples here
-        delayMicroseconds(500);  // Hold low before next bit
-        
+        this->data_pin_->digital_write(to_send[i] & (1 << j));
+        this->clock_pin_->digital_write(false);
         s += (to_send[i] & (1 << j)) ? "1" : "0";
+        delay(1);  // Original used 1ms delay
       }
       s += " (";
       s += format_hex(to_send.data() + i, 1);
