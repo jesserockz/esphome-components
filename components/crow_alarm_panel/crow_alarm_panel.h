@@ -110,6 +110,7 @@ class CrowAlarmPanel : public Component {
   void set_clock_pin(InternalGPIOPin *clock) { this->clock_pin_ = clock; }
   void set_data_pin(InternalGPIOPin *data) { this->data_pin_ = data; }
   void set_keypad_address(uint8_t address) { this->keypad_address_ = address; }
+  void set_pin(const std::string &pin) { this->pin_ = pin; }
   void add_keypad(const std::string &name, uint8_t address) {
     this->keypads_.push_back(std::move(CrowAlarmPanelKeypad{
         .name = name,
@@ -154,7 +155,7 @@ class CrowAlarmPanel : public Component {
 
   void arm_away();
   void arm_stay();
-  void disarm(const std::string code);
+  void disarm();
 
   Trigger<uint8_t, std::vector<uint8_t>> *get_on_message_trigger() const { return this->on_message_trigger_; }
 
@@ -169,6 +170,7 @@ class CrowAlarmPanel : public Component {
   InternalGPIOPin *clock_pin_;
   InternalGPIOPin *data_pin_;
   uint8_t keypad_address_;
+  std::string pin_;
   text_sensor::TextSensor *armed_state_;
   Trigger<uint8_t, std::vector<uint8_t>> *on_message_trigger_{new Trigger<uint8_t, std::vector<uint8_t>>()};
 

@@ -306,11 +306,35 @@ void CrowAlarmPanel::loop() {
   }
 }
 
-void CrowAlarmPanel::arm_away() {}
+void CrowAlarmPanel::arm_away() {
+  ESP_LOGI(TAG, "Sending arm away command");
+  this->keypress(13);  // ARM key
+}
 
-void CrowAlarmPanel::arm_stay() {}
+void CrowAlarmPanel::arm_stay() {
+  ESP_LOGI(TAG, "Sending arm stay command");
+  this->keypress(14);  // STAY key
+}
 
-void CrowAlarmPanel::disarm(const std::string code) {}
+void CrowAlarmPanel::disarm() {
+  if (this->pin_.empty()) {
+    ESP_LOGW(TAG, "Cannot disarm: no PIN configured");
+    return;
+  }
+  
+  ESP_LOGI(TAG, "Sending disarm sequence");
+  
+  // Send each digit of the PIN
+  for (char c : this->pin_) {
+    if (c >= '0' && c <= '9') {
+      uint8_t key = c - '0';  // Convert char to key code (0-9)
+      this->keypress(key);
+    }
+  }
+  
+  // Send ENTER to confirm
+  this->keypress(17);  // KEY_ENTER
+}
 
 void CrowAlarmPanel::set_output(uint8_t output, bool state) {}
 
