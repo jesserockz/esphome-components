@@ -277,8 +277,9 @@ void CrowAlarmPanel::loop() {
   
   if (!this->tx_buffer_.empty() && !this->store_.data) {
     InterruptLock lock;
-    this->clock_pin_->pin_mode(gpio::FLAG_OUTPUT);
-    this->data_pin_->pin_mode(gpio::FLAG_OUTPUT);
+    // Use open-drain mode - only pull LOW, let pull-up handle HIGH
+    this->clock_pin_->pin_mode(gpio::FLAG_OUTPUT_OPEN_DRAIN);
+    this->data_pin_->pin_mode(gpio::FLAG_OUTPUT_OPEN_DRAIN);
     
     // Ensure clock starts LOW
     this->clock_pin_->digital_write(false);
