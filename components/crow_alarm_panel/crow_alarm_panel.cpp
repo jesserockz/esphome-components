@@ -292,13 +292,13 @@ void CrowAlarmPanel::loop() {
       for (uint8_t j = 0; j < 8; j++) {
         // Set data FIRST (before clock edge)
         this->data_pin_->digital_write(to_send[i] & (1 << j));
-        delayMicroseconds(50);  // Let data settle
+        delayMicroseconds(500);  // Let data settle (longer for slow shifter)
         
         // Pulse clock: LOW -> HIGH -> LOW
         this->clock_pin_->digital_write(true);
-        delayMicroseconds(50);  // Hold high
+        delayMicroseconds(500);  // Hold high (longer for slow shifter)
         this->clock_pin_->digital_write(false);  // Falling edge - receiver samples here
-        delayMicroseconds(50);  // Hold low before next bit
+        delayMicroseconds(500);  // Hold low before next bit
         
         s += (to_send[i] & (1 << j)) ? "1" : "0";
       }
