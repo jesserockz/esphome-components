@@ -279,16 +279,27 @@ void CrowAlarmPanel::loop() {
     InterruptLock lock;
     this->clock_pin_->pin_mode(gpio::FLAG_OUTPUT);
     this->data_pin_->pin_mode(gpio::FLAG_OUTPUT);
+    
+    // Ensure clock starts LOW
+    this->clock_pin_->digital_write(false);
+    delayMicroseconds(100);
+    
     std::vector<uint8_t> to_send = this->tx_buffer_[0];
     std::string s;
     this->tx_buffer_.erase(this->tx_buffer_.begin());
     for (uint8_t i = 0; i < to_send.size(); i++) {
       for (uint8_t j = 0; j < 8; j++) {
-        this->clock_pin_->digital_write(true);
+        // Set data FIRST (before clock edge)
         this->data_pin_->digital_write(to_send[i] & (1 << j));
-        this->clock_pin_->digital_write(false);
+        delayMicroseconds(50);  // Let data settle
+        
+        // Pulse clock: LOW -> HIGH -> LOW
+        this->clock_pin_->digital_write(true);
+        delayMicroseconds(50);  // Hold high
+        this->clock_pin_->digital_write(false);  // Falling edge - receiver samples here
+        delayMicroseconds(50);  // Hold low before next bit
+        
         s += (to_send[i] & (1 << j)) ? "1" : "0";
-        delay(1);
       }
       s += " (";
       s += format_hex(to_send.data() + i, 1);
