@@ -30,7 +30,7 @@ static const uint8_t MEMORY_EVENT = 0x20;
 static const uint8_t OUTPUT_STATE = 0x50;
 static const uint8_t CURRENT_TIME = 0x54;
 static const uint8_t BOUNDARY = 0x7E;
-static const uint8_t KEYPRESS = 0xA1;
+static const uint8_t KEYPRESS = 0xD1;  // Original dev's value - testing
 static const uint8_t MEMORY_CLEAR = 0xD2;
 
 // Keys 0 - 9 are 0-9
