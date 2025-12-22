@@ -179,6 +179,7 @@ class CrowAlarmPanel : public Component {
   std::vector<CrowAlarmPanelOutput> outputs_;
 
   std::vector<std::vector<uint8_t>> tx_buffer_;
+  uint32_t last_message_time_{0};
 };
 
 }  // namespace crow_alarm_panel

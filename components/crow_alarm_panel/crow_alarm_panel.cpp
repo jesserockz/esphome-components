@@ -129,6 +129,12 @@ void CrowAlarmPanel::loop() {
     this->store_.data_length = 0;
     ets_intr_unlock();
 
+    // DIAGNOSTIC: Log time gap between messages
+    uint32_t now = millis();
+    uint32_t gap = now - this->last_message_time_;
+    ESP_LOGD(TAG, "DIAG: Message gap = %u ms", gap);
+    this->last_message_time_ = now;
+
     ESP_LOGD(TAG, "Received data: [%02x.%s]", type, format_hex_pretty(data).c_str());
 
     switch (type) {
@@ -261,7 +267,15 @@ void CrowAlarmPanel::loop() {
         break;
     }
     this->on_message_trigger_->trigger(type, data);
-  } else if (!this->tx_buffer_.empty() && !this->store_.data) {
+  }
+  
+  // DIAGNOSTIC: Log TX queue status when there's something to send
+  if (!this->tx_buffer_.empty()) {
+    uint32_t idle_time = millis() - this->last_message_time_;
+    ESP_LOGD(TAG, "DIAG: TX pending, idle_time=%ums, store_.data=%d", idle_time, this->store_.data);
+  }
+  
+  if (!this->tx_buffer_.empty() && !this->store_.data) {
     InterruptLock lock;
     this->clock_pin_->pin_mode(gpio::FLAG_OUTPUT);
     this->data_pin_->pin_mode(gpio::FLAG_OUTPUT);
