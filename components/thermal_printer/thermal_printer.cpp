@@ -50,8 +50,6 @@ static const uint8_t TEXT_ALIGN_CMD[] = {ESC, 'a'}; // ESC a n - text alignment
 static const uint8_t LINE_SPACING_CMD[] = {ESC, '3'}; // ESC 3 n - line spacing
 
 // Character encoding commands
-static const uint8_t CHARSET_CMD[] = {ESC, 'R'}; // ESC R n - international character set
-static const uint8_t CODEPAGE_CMD[] = {ESC, 't'}; // ESC t n - character code table
 static const uint8_t DEFAULT_LINE_SPACING_CMD[] = {ESC, '2'}; // ESC 2 - default spacing
 static const uint8_t PRINT_DENSITY_CMD[] = {0x12, '#'}; // DC2 # n - print density
 
@@ -59,15 +57,20 @@ static const uint8_t PRINT_DENSITY_CMD[] = {0x12, '#'}; // DC2 # n - print densi
 static const uint8_t BOLD_ON_CMD[] = {ESC, 'E', 1}; // ESC E 1 - bold on
 static const uint8_t BOLD_OFF_CMD[] = {ESC, 'E', 0}; // ESC E 0 - bold off
 static const uint8_t UNDERLINE_CMD[] = {ESC, '-'}; // ESC - n - underline
-static const uint8_t UPSIDE_DOWN_CMD[] = {ESC, '{'}; // ESC { n - upside down mode
+static const uint8_t UNDERLINE_OFF_CMD[] = {ESC, '-', 0}; // ESC - 0 - underline off
+static const uint8_t UPSIDE_DOWN_ON_CMD[] = {ESC, '{',1 }; // ESC { n - upside down mode on
+static const uint8_t UPSIDE_DOWN_OFF_CMD[] = {ESC, '{', 0}; // ESC { n - upside down mode off
+static const uint8_t DOUBLE_STRIKE_ON_CMD[] = {ESC, 'G', 1}; // ESC G 1 - double strike on
+static const uint8_t DOUBLE_STRIKE_OFF_CMD[] = {ESC, 'G', 0}; // ESC G 0 - double strike off
+static const uint8_t INVERSE_ON_CMD[] = {GS, 'B', 1}; // GS B 1 - inverse on
+static const uint8_t INVERSE_OFF_CMD[] = {GS, 'B', 0}; // GS B 0 - inverse off
+static const uint8_t ROTATE_90_ON_CMD[] = {ESC, 'V', 1}; // ESC V n - rotation (n=1 for 90-degree clockwise)
+static const uint8_t ROTATE_90_OFF_CMD[] = {ESC, 'V', 0}; // ESC V n - rotation (n=0 for normal orientation)
 
 // Printer control commands
 static const uint8_t TEST_PAGE_CMD[] = {0x12, 'T'}; // DC2 T - print test page
 static const uint8_t SLEEP_MODE_CMD[] = {ESC, '8'}; // ESC 8 n1 n2 - sleep mode
 
-// Additional text formatting commands
-static const uint8_t ROTATE_90_CMD[] = {ESC, 'R'}; // ESC R n - 90 degree rotation (alternative)
-static const uint8_t INVERSE_PRINT_CMD[] = {ESC, 'B'}; // ESC B n - white/black inverse (alternative)
 // Chinese mode commands removed - they interfere with character encoding
 // Use charset/codepage commands instead for proper character support
 
@@ -108,28 +111,43 @@ void ThermalPrinterDisplay::print_text(std::string text, uint8_t font_width, uin
   
   // Apply current formatting state first
   if (this->bold_state_) {
-    uint8_t bold_cmd[] = {0x1B, 0x45, 0x01}; // ESC E 1 (bold on)
-    this->write_array(bold_cmd, sizeof(bold_cmd));
+    this->write_array(BOLD_ON_CMD, sizeof(BOLD_ON_CMD));
+  }
+  else {
+    this->write_array(BOLD_OFF_CMD, sizeof(BOLD_OFF_CMD));
   }
   
   if (this->underline_state_ > 0) {
     uint8_t underline_cmd[] = {0x1B, 0x2D, this->underline_state_}; // ESC - n
     this->write_array(underline_cmd, sizeof(underline_cmd));
   }
+  else {
+    this->write_array(UNDERLINE_OFF_CMD, sizeof(UNDERLINE_OFF_CMD));
+  }
   
   if (this->upside_down_state_) {
-    uint8_t upside_cmd[] = {0x1B, 0x7B, 0x01}; // ESC { 1 (upside down on)
-    this->write_array(upside_cmd, sizeof(upside_cmd));
+    this->write_array(UPSIDE_DOWN_ON_CMD, sizeof(UPSIDE_DOWN_ON_CMD));
+  }
+  else {
+    this->write_array(UPSIDE_DOWN_OFF_CMD, sizeof(UPSIDE_DOWN_OFF_CMD));
   }
   
   if (this->font_type_state_ > 0) {
     uint8_t font_type_cmd[] = {0x1B, 0x4D, this->font_type_state_}; // ESC M n
     this->write_array(font_type_cmd, sizeof(font_type_cmd));
   }
+  else {
+    uint8_t font_type_cmd[] = {0x1B, 0x4D, 0x00}; // ESC M 0 (Font A)
+    this->write_array(font_type_cmd, sizeof(font_type_cmd));
+  }
   
   // Apply current alignment state
   if (this->alignment_state_ != 0) {
     uint8_t align_cmd[] = {0x1B, 0x61, this->alignment_state_}; // ESC a n
+    this->write_array(align_cmd, sizeof(align_cmd));
+  }
+  else {
+    uint8_t align_cmd[] = {0x1B, 0x61, 0x00}; // ESC a 0 (left align)
     this->write_array(align_cmd, sizeof(align_cmd));
   }
   
@@ -264,24 +282,22 @@ void ThermalPrinterDisplay::thermal_print_text_with_formatting(
       ESP_LOGD(TAG, "Applied character spacing: %d (in 0.125mm units = %.2fmm)", clamped_spacing, clamped_spacing * 0.125f);
     }
     
-    // Apply alignment - generally safe and commonly used
+    // Apply alignment if specified
     if (alignment > 0) {
       uint8_t align_cmd[] = {0x1B, 0x61, (uint8_t)alignment};
       this->write_array(align_cmd, sizeof(align_cmd));
       ESP_LOGD(TAG, "Applied text alignment: %d", alignment);
     }
     
-    // Add bold formatting - test if this works without character corruption
+    // Add bold formatting
     if (bold) {
-      uint8_t bold_cmd[] = {0x1B, 0x45, 0x01};
-      this->write_array(bold_cmd, sizeof(bold_cmd));
+      this->write_array(BOLD_ON_CMD, sizeof(BOLD_ON_CMD));
       ESP_LOGD(TAG, "Applied bold formatting");
     }
     
     // Add double-strike formatting (ESC G n) - overlapping dots for darker text
     if (double_strike) {
-      uint8_t double_strike_cmd[] = {0x1B, 0x47, 0x01}; // ESC G 1
-      this->write_array(double_strike_cmd, sizeof(double_strike_cmd));
+      this->write_array(DOUBLE_STRIKE_ON_CMD, sizeof(DOUBLE_STRIKE_ON_CMD));
       ESP_LOGD(TAG, "Applied double-strike formatting (overlapping dots)");
     }
     
@@ -294,22 +310,19 @@ void ThermalPrinterDisplay::thermal_print_text_with_formatting(
     
     // Add inverse printing formatting
     if (inverse) {
-      uint8_t inverse_cmd[] = {0x1D, 0x42, 0x01}; // GS B 1 (inverse on)
-      this->write_array(inverse_cmd, sizeof(inverse_cmd));
+      this->write_array(INVERSE_ON_CMD, sizeof(INVERSE_ON_CMD));
       ESP_LOGD(TAG, "Applied inverse formatting");
     }
     
     // Add upside down formatting
     if (upside_down) {
-      uint8_t upside_down_cmd[] = {0x1B, 0x7B, 0x01}; // ESC { 1 (upside down on)
-      this->write_array(upside_down_cmd, sizeof(upside_down_cmd));
+      this->write_array(UPSIDE_DOWN_ON_CMD, sizeof(UPSIDE_DOWN_ON_CMD));
       ESP_LOGD(TAG, "Applied upside down formatting");
     }
     
     // Add 90-degree rotation formatting
     if (rotation) {
-      uint8_t rotation_cmd[] = {0x1B, 0x56, 0x01}; // ESC V 1 (90-degree clockwise rotation)
-      this->write_array(rotation_cmd, sizeof(rotation_cmd));
+      this->write_array(ROTATE_90_ON_CMD, sizeof(ROTATE_90_ON_CMD));
       ESP_LOGD(TAG, "Applied 90-degree rotation formatting");
     }
     
@@ -356,56 +369,42 @@ void ThermalPrinterDisplay::thermal_print_text_with_formatting(
     
     // Reset bold if it was applied
     if (bold) {
-      uint8_t bold_reset_cmd[] = {0x1B, 0x45, 0x00};
-      this->write_array(bold_reset_cmd, sizeof(bold_reset_cmd));
+      this->write_array(BOLD_OFF_CMD, sizeof(BOLD_OFF_CMD));
       ESP_LOGD(TAG, "Reset bold formatting");
     }
     
     // Reset double-strike if it was applied
     if (double_strike) {
-      uint8_t double_strike_reset_cmd[] = {0x1B, 0x47, 0x00}; // ESC G 0
-      this->write_array(double_strike_reset_cmd, sizeof(double_strike_reset_cmd));
+      this->write_array(DOUBLE_STRIKE_OFF_CMD, sizeof(DOUBLE_STRIKE_OFF_CMD));
       ESP_LOGD(TAG, "Reset double-strike formatting");
     }
     
     // Reset underline if it was applied
     if (underline > 0) {
-      uint8_t underline_reset_cmd[] = {0x1B, 0x2D, 0x00};
-      this->write_array(underline_reset_cmd, sizeof(underline_reset_cmd));
+      this->write_array(UNDERLINE_OFF_CMD, sizeof(UNDERLINE_OFF_CMD));
       ESP_LOGD(TAG, "Reset underline formatting");
     }
     
     // Reset inverse if it was applied
     if (inverse) {
-      uint8_t inverse_reset_cmd[] = {0x1D, 0x42, 0x00}; // GS B 0 (inverse off)
-      this->write_array(inverse_reset_cmd, sizeof(inverse_reset_cmd));
+      this->write_array(INVERSE_OFF_CMD, sizeof(INVERSE_OFF_CMD));
       ESP_LOGD(TAG, "Reset inverse formatting");
     }
     
     // Reset upside down if it was applied
     if (upside_down) {
-      uint8_t upside_down_reset_cmd[] = {0x1B, 0x7B, 0x00}; // ESC { 0 (upside down off)
-      this->write_array(upside_down_reset_cmd, sizeof(upside_down_reset_cmd));
+      this->write_array(UPSIDE_DOWN_OFF_CMD, sizeof(UPSIDE_DOWN_OFF_CMD));
       ESP_LOGD(TAG, "Reset upside down formatting");
     }
     
     // Reset rotation if it was applied
     if (rotation) {
-      uint8_t rotation_reset_cmd[] = {0x1B, 0x56, 0x00}; // ESC V 0 (normal orientation)
-      this->write_array(rotation_reset_cmd, sizeof(rotation_reset_cmd));
+      this->write_array(ROTATE_90_OFF_CMD, sizeof(ROTATE_90_OFF_CMD));
       ESP_LOGD(TAG, "Reset rotation formatting");
     }
     
-    // Reset alignment to left if it was changed
-    if (alignment > 0) {
-      uint8_t align_reset_cmd[] = {0x1B, 0x61, 0x00};
-      this->write_array(align_reset_cmd, sizeof(align_reset_cmd));
-      ESP_LOGD(TAG, "Reset alignment to left");
-    }
-    
     if (bold) {
-      uint8_t bold_off_cmd[] = {0x1B, 0x45, 0x00};
-      this->write_array(bold_off_cmd, sizeof(bold_off_cmd));
+      this->write_array(BOLD_OFF_CMD, sizeof(BOLD_OFF_CMD));
       ESP_LOGD(TAG, "Reset bold formatting");
     }
     
@@ -955,89 +954,64 @@ void ThermalPrinterDisplay::send_raw_command(const std::vector<uint8_t> &command
     ESP_LOGW(TAG, "Attempted to send empty raw command");
   }
 }
-void ThermalPrinterDisplay::run_demo(bool show_qr_code, bool show_barcode,
-                                     bool show_text_styles, bool show_inverse, bool show_rotation, bool show_upside_down) {
-  ESP_LOGD(TAG, "Running comprehensive printer demo with flags: QR=%s, barcode=%s, text=%s, inverse=%s, rotation=%s, upside_down=%s",
-           show_qr_code ? "yes" : "no", show_barcode ? "yes" : "no",
+void ThermalPrinterDisplay::run_demo(bool show_header, bool show_intro, bool show_footer, bool show_text_styles, bool show_inverse, bool show_rotation, bool show_upside_down, bool show_qr_code, bool show_barcode) {
+  ESP_LOGD(TAG, "Running comprehensive printer demo with flags: header=%s, intro=%s, footer=%s, formatting=%s, inverse=%s, rotation=%s, upside_down=%s QR=%s, barcode=%s, ",
+           show_header ? "yes" : "no", show_intro ? "yes" : "no", show_footer ? "yes" : "no",
            show_text_styles ? "yes" : "no", show_inverse ? "yes" : "no", show_rotation ? "yes" : "no",
-           show_upside_down ? "yes" : "no");
+           show_upside_down ? "yes" : "no", show_qr_code ? "yes" : "no", show_barcode ? "yes" : "no");
 
   this->init_();
 
   // Reset printer to default state
   this->write_array(PRINT_MODE_RESET_CMD, sizeof(PRINT_MODE_RESET_CMD));
-  
-  // === ESPHOME LOGO HEADER ===
-  this->set_text_alignment(1); // Center
-  this->new_line(1);
-  
-  // Try to create a simple ESPHome logo bitmap
-  ESP_LOGD(TAG, "Drawing ESPHome bitmap logo");
+  this->reset_all_formatting();
+  delay(200); // Allow printer to process reset
     
-  // Also add ASCII art as backup
-  this->set_text_style(true, 0, false); // Bold
-  this->print_text("***********************");
-  this->new_line(1);
-  this->print_text("*     ESPHome v1.0    *");
-  this->new_line(1);
-  this->print_text("*  Thermal Printer    *");
-  this->new_line(1);
-  this->print_text("*     Component       *");
-  this->new_line(1);
-  this->print_text("***********************");
-  this->set_text_style(false, 0, false); // Reset
-  this->new_line(2);
-  
   // === HITCHHIKER'S GUIDE THEMED HEADER ===
-  this->set_text_style(true, 0, false); // Bold
-  this->print_text("DON'T PANIC", 2, 2); // Large bold
-  this->new_line(1);
-  this->set_text_style(false, 0, false); // Reset to normal first
-  this->set_text_style(false, 1, false); // Normal, underlined
-  this->print_text("The Hitchhiker's Guide to", 1, 1);
-  this->new_line(1);
-  this->print_text("Thermal Printing", 1, 1);
-  this->new_line(1);
-  this->set_text_style(false, 0, false); // Reset all formatting including underline
-  this->print_text("42nd Edition - ESPHome Compatible");
-  this->new_line(2);
+  if (show_header) {
+    ESP_LOGD(TAG, "Demo: Hitchhiker's Guide themed header");
+    this->set_text_alignment(1); // Center
+    this->new_line(1);
+    this->set_text_style(true, 0, false); // Bold
+    this->print_text("DON'T PANIC", 2, 2); // Large bold
+    this->new_line(1);
+    this->set_text_style(false, 0, false); // Reset to normal first
+    this->set_text_style(false, 1, false); // Normal, underlined
+    this->print_text("The Hitchhiker's Guide to", 1, 1);
+    this->new_line(1);
+    this->print_text("Thermal Printing", 1, 1);
+    this->new_line(1);
+    this->set_text_style(false, 0, false); // Reset all formatting including underline
+    this->print_text("42nd Edition - for ESPHome");
+    this->new_line(2);
+  }
 
-  // Reset formatting and left align
-  this->set_text_style(false, 0, false); // Ensure all formatting is reset
-  this->set_text_alignment(0);
-  // Send explicit underline reset command
-  uint8_t underline_reset[] = {0x1B, 0x2D, 0x00}; // ESC - 0
-  this->write_array(underline_reset, sizeof(underline_reset));
+  if (show_intro) {
+    ESP_LOGD(TAG, "Demo: Introduction and formatting showcase");
+    this->reset_all_formatting(); // Reset formatting
 
-  // Opening introduction
-  this->print_text("Welcome, intergalactic traveler!");
-  this->new_line(1);
-  this->print_text("This thermal printer demonstration");
-  this->new_line(1);
-  this->print_text("will showcase the Answer to the");
-  this->new_line(1);
-  this->print_text("Ultimate Question of Printing:");
-  this->new_line(1);
-  
-  this->set_text_alignment(1); // Center for the answer
-  this->set_text_style(true, 0, false); // Bold
-  this->print_text("42 printing features!", 2, 2);
-  this->set_text_style(false, 0, false); // Reset
-  this->set_text_alignment(0);
-  this->new_line(2);
-
-  this->print_text("Remember: Always carry a towel");
-  this->print_text("and a working thermal printer.");
-  this->new_line(2);
+    // Opening introduction
+    this->print_text("Welcome, intergalactic traveler!");
+    this->new_line(1);
+    this->print_text("This thermal printer demo");
+    this->print_text("will showcase the Answer to the");
+    this->print_text("Ultimate Question of Printing:");
+    this->new_line(1);
+    
+    this->set_text_alignment(1); // Center for the answer
+    this->set_text_style(true, 0, false); // Bold
+    this->print_text("42 printing features!", 2, 2);
+    this->set_text_style(false, 0, false); // Reset
+    this->set_text_alignment(0);
+    this->new_line(2);
+  }
 
   // === TEXT STYLES AND FORMATTING ===
   if (show_text_styles) {
     ESP_LOGD(TAG, "Demo: Text styles and formatting");
 
     // Explicit formatting reset at start of section
-    this->set_text_style(false, 0, false);
-    uint8_t reset_cmds[] = {0x1B, 0x45, 0x00, 0x1B, 0x2D, 0x00}; // Bold off, underline off
-    this->write_array(reset_cmds, sizeof(reset_cmds));
+    this->reset_all_formatting();
 
     this->set_text_alignment(1); // Center
     this->set_text_style(true, 2, false); // Bold underline
@@ -1049,82 +1023,63 @@ void ThermalPrinterDisplay::run_demo(bool show_qr_code, bool show_barcode,
 
     // Font size progression
     this->print_text("Font sizes for towel labels:");
-    this->new_line(1);
     this->print_text("Size 1x1: Compact towel tag", 1, 1);
-    this->new_line(1);
     this->print_text("Size 2x1: Bath towel", 2, 1);
-    this->new_line(1);
     this->print_text("Size 3x2: Beach towel", 3, 2);
-    this->new_line(1);
     this->print_text("Size 4x3: Hoopy!", 4, 3);
-    this->new_line(2);
 
     // Text alignment demonstration
-    this->print_text("Text alignment test:");
     this->new_line(1);
+    this->print_text("Text alignment test:");
     
     this->set_text_alignment(0); // Left
     this->print_text("Left: Earth (mostly harmless)");
-    this->new_line(1);
     
     this->set_text_alignment(1); // Center
     this->print_text("Center: Milliways Restaurant");
-    this->new_line(1);
     
     this->set_text_alignment(2); // Right
     this->print_text("Right: Magrathea Industries");
-    this->new_line(1);
     
     this->set_text_alignment(0); // Reset to left
-    this->new_line(1);
 
     // Text styling combinations
-    this->print_text("Vogon Poetry Styles:");
     this->new_line(1);
+    this->print_text("Vogon Poetry Styles:");
 
     this->set_text_style(true, 0, false); // Bold
     this->print_text("Bold: Oh freddled gruntbuggly!");
     this->set_text_style(false, 0, false); // Reset bold
-    this->new_line(1);
 
     this->set_text_style(false, 1, false); // Single underline
     this->print_text("Underline: Thy micturations");
     this->set_text_style(false, 0, false); // Reset underline
-    this->new_line(1);
 
     this->set_text_style(false, 2, false); // Double underline
     this->print_text("Double: Are to me");
     this->set_text_style(false, 0, false); // Reset underline
-    this->new_line(1);
 
     this->set_text_style(true, 1, false); // Bold + underline
     this->print_text("Bold+Under: As plurdled gabbleblotchits!");
     this->set_text_style(false, 0, false); // Reset all
-    this->new_line(2);
   
-    this->print_text("Underlined: Thy micturations");
-    this->new_line(1);
+    this->print_text("Normal: Thy micturations");
     
     this->set_text_style(false, 2, false); // Double underline
     this->print_text("Double underlined: are to me");
-    this->new_line(1);
 
     this->set_text_style(true, 1, false); // Bold + underline
     this->print_text("Bold+underlined: As plurdled", 2, 1);
-    this->new_line(1);
 
     this->set_text_style(false, 0, false); // Reset
     this->print_text("(Vogon poetry causes nausea)");
-    this->new_line(2);
   }
 
   if (show_inverse) {
     ESP_LOGD(TAG, "Demo: Inverse printing");
 
     // Explicit formatting reset
-    this->set_text_style(false, 0, false);
-    uint8_t reset_cmds[] = {0x1B, 0x45, 0x00, 0x1B, 0x2D, 0x00}; // Bold off, underline off
-    this->write_array(reset_cmds, sizeof(reset_cmds));
+    this->reset_all_formatting();
 
     this->set_text_alignment(1); // Center
     this->set_text_style(true, 0, false);
@@ -1151,13 +1106,11 @@ void ThermalPrinterDisplay::run_demo(bool show_qr_code, bool show_barcode,
     ESP_LOGD(TAG, "Demo: 90-degree rotation");
 
     // Explicit formatting reset
-    this->set_text_style(false, 0, false);
-    uint8_t reset_cmds[] = {0x1B, 0x45, 0x00, 0x1B, 0x2D, 0x00}; // Bold off, underline off
-    this->write_array(reset_cmds, sizeof(reset_cmds));
+    this->reset_all_formatting();
 
     this->set_text_alignment(1); // Center
     this->set_text_style(true, 0, false);
-    this->print_text("=== ROTATION ===", 0);  // Reduced from 1 to 0
+    this->print_text("=== ROTATION ===", 0);  // Normal rotation for header
     this->set_text_style(false, 0, false);
     this->set_text_alignment(0);
     this->new_line(1);
@@ -1182,9 +1135,7 @@ void ThermalPrinterDisplay::run_demo(bool show_qr_code, bool show_barcode,
     ESP_LOGD(TAG, "Demo: Upside-down text");
 
     // Explicit formatting reset
-    this->set_text_style(false, 0, false);
-    uint8_t reset_cmds[] = {0x1B, 0x45, 0x00, 0x1B, 0x2D, 0x00}; // Bold off, underline off
-    this->write_array(reset_cmds, sizeof(reset_cmds));
+    this->reset_all_formatting();
 
     this->set_text_alignment(1); // Center
     this->set_text_style(true, 0, false);
@@ -1212,9 +1163,10 @@ void ThermalPrinterDisplay::run_demo(bool show_qr_code, bool show_barcode,
   if (show_qr_code) {
     ESP_LOGD(TAG, "Demo: QR codes");
 
+    this->reset_all_formatting();
     this->set_text_alignment(1); // Center
     this->set_text_style(true, 0, false);
-    this->print_text("=== QR CODES ===", 0);  // Reduced from 1 to 0
+    this->print_text("=== QR CODES ===", 0);  // Normal rotation for header
     this->set_text_style(false, 0, false);
     this->new_line(1);
 
@@ -1241,9 +1193,11 @@ void ThermalPrinterDisplay::run_demo(bool show_qr_code, bool show_barcode,
   if (show_barcode) {
     ESP_LOGD(TAG, "Demo: Barcodes");
 
+    this->reset_all_formatting();
+
     this->set_text_alignment(1); // Center
     this->set_text_style(true, 0, false);
-    this->print_text("=== BARCODES ===", 0);  // Reduced from 1 to 0
+    this->print_text("=== BARCODES ===", 0);  // Normal rotation for header
     this->set_text_style(false, 0, false);
     this->new_line(1);
 
@@ -1269,25 +1223,27 @@ void ThermalPrinterDisplay::run_demo(bool show_qr_code, bool show_barcode,
     this->new_line(2);
   }
 
-  // Footer with completion message
-  this->set_text_alignment(1); // Center
-  this->set_text_style(true, 0, false); // Bold
-  this->print_text("Demo Complete!", 2, 1);  // Bold + wide using font_width
-  this->new_line(1);
-  this->set_text_style(false, 0, false);
+  if (show_footer) {
+    ESP_LOGD(TAG, "Demo: Footer and completion message");
+    // Footer with completion message
+    this->reset_all_formatting();
+    this->set_text_alignment(1); // Center
+    this->set_text_style(true, 0, false); // Bold
+    this->print_text("Demo Complete!", 2, 1);  // Bold + wide using font_width
+    this->new_line(1);
+    this->set_text_style(false, 0, false);
 
-  this->print_text("Thank you for printing");
-  this->new_line(1);
-  this->print_text("with Thermal Printer!");
-  this->new_line(1);
-
-  // Reset all settings to defaults
-  this->set_text_style(false, 0, false);
-  this->set_text_alignment(0);
-  this->set_inverse_printing(false);
-  this->set_90_degree_rotation(false);
-  this->set_upside_down_printing(false);
-
+    this->print_text("Thank you for printing");
+    this->new_line(1);
+    this->print_text("with Thermal Printer!");
+    this->new_line(1);
+    this->print_text("Remember: Always carry a towel");
+    this->print_text("and a working thermal printer.");
+    this->new_line(2);
+    
+    // Reset all settings to defaults
+    this->reset_all_formatting();
+  }
   ESP_LOGD(TAG, "Demo completed successfully");
 }
 

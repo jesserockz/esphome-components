@@ -269,14 +269,16 @@ class ThermalPrinterDisplay : public display::DisplayBuffer, public uart::UARTDe
   /**
    * Run demo/debug function to showcase all printer capabilities
    * Features Hitchhiker's Guide to the Galaxy themed content
-   * @param show_qr_code Print QR code demo (default: false, true when no params)
-   * @param show_barcode Print barcode demo (default: false, true when no params)
+   * @param show_header Print themed header (default: false, true when no params)
+   * @param show_intro Print introduction and formatting showcase (default: false, true when no params)
+   * @param show_footer Print completion message footer (default: false, true when no params)
    * @param show_text_styles Print various text formatting demos (default: false, true when no params)
    * @param show_inverse Print inverse text demo (default: false, true when no params)
    * @param show_rotation Print 90-degree rotated text demo (default: false, true when no params)
+   * @param show_qr_code Print QR code demo (default: false, true when no params)
+   * @param show_barcode Print barcode demo (default: false, true when no params)
    */
-  void run_demo(bool show_qr_code = false, bool show_barcode = false,
-                bool show_text_styles = false, bool show_inverse = false, bool show_rotation = false, bool show_upside_down = false);
+  void run_demo(bool show_header=false, bool show_intro = false, bool show_footer = false, bool show_text_styles = false, bool show_inverse = false, bool show_rotation = false, bool show_upside_down = false, bool show_qr_code = false, bool show_barcode = false);
 
   /**
    * Set horizontal tab stop positions

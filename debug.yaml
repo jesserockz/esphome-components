@@ -88,19 +88,29 @@ api:
     - service: reset_formatting
       then:
         - thermal_printer.reset_all_formatting:
-    
-    # Note: Automatic printer status monitoring is disabled for this printer model
-    # Both DLE EOT (10 04 n) and ESC v (1B 76 n) status commands return random/garbage
-    # values instead of actual status data. This appears to be a hardware limitation.
-    # Manual status checking can still be done via services if needed, but sensors
-    # are not automatically updated to prevent noise in Home Assistant
-    
-    # Binary sensors are available but will not update automatically:
-    # - printer_online (would indicate connectivity status)  
-    # - printer_cover (would indicate cover position)
-    # - paper_out (would indicate paper sensor status)
-    # - printer_error (would indicate error conditions)
-    
+    # Run demo
+    - service: run_demo
+      variables:
+        show_header: bool
+        show_introduction: bool
+        show_footer: bool
+        show_text_styles: bool
+        show_inverse: bool
+        show_rotation: bool
+        show_upside_down: bool
+        show_qr_code: bool
+        show_barcode: bool
+      then:
+        - thermal_printer.run_demo:
+            show_header: !lambda "return show_header;"
+            show_introduction: !lambda "return show_introduction;"
+            show_footer: !lambda "return show_footer;"
+            show_text_styles: !lambda "return show_text_styles;"
+            show_inverse: !lambda "return show_inverse;"
+            show_rotation: !lambda "return show_rotation;"
+            show_upside_down: !lambda "return show_upside_down;"
+            show_qr_code: !lambda "return show_qr_code;"
+            show_barcode: !lambda "return show_barcode;"
     # Test sleep/wake functionality
     - service: test_sleep_management
       then:
@@ -1015,7 +1025,7 @@ display:
   # ADAFRUIT_597/SPARKFUN_10438: Status monitoring enabled, barcode only (recommended: 19200 baud)
   # Note: Set uart.baud_rate above to match your printer model's recommended baud rate!
 
-# Image components for bitmap printing
+# Image components for bitmap printing test
 image:
   - file: "esphome_logo.png"
     id: esphome_logo

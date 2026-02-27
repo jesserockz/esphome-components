@@ -154,6 +154,9 @@ CONF_POSITIONS = "positions"
 CONF_POSITION = "position"
 CONF_DOTS = "dots" 
 CONF_LINES = "lines"
+CONF_SHOW_HEADER = "show_header"
+CONF_SHOW_INTRODUCTION = "show_introduction"
+CONF_SHOW_FOOTER = "show_footer"
 CONF_SHOW_QR_CODE = "show_qr_code"
 CONF_SHOW_BARCODE = "show_barcode"
 CONF_SHOW_TEXT_STYLES = "show_text_styles"
@@ -692,14 +695,17 @@ async def thermal_printer_print_test_page_action_to_code(
     cv.Schema(
         {
             cv.GenerateID(): cv.use_id(ThermalPrinterDisplay),
-            cv.Optional(CONF_SHOW_QR_CODE, default=False): cv.templatable(cv.boolean),
-            cv.Optional(CONF_SHOW_BARCODE, default=False): cv.templatable(cv.boolean),
+            cv.Optional(CONF_SHOW_HEADER, default=True): cv.templatable(cv.boolean),
+            cv.Optional(CONF_SHOW_INTRODUCTION, default=True): cv.templatable(cv.boolean),
+            cv.Optional(CONF_SHOW_FOOTER, default=True): cv.templatable(cv.boolean),
             cv.Optional(CONF_SHOW_TEXT_STYLES, default=False): cv.templatable(
                 cv.boolean
             ),
             cv.Optional(CONF_SHOW_INVERSE, default=False): cv.templatable(cv.boolean),
             cv.Optional(CONF_SHOW_ROTATION, default=False): cv.templatable(cv.boolean),
             cv.Optional(CONF_SHOW_UPSIDE_DOWN, default=False): cv.templatable(cv.boolean),
+            cv.Optional(CONF_SHOW_QR_CODE, default=False): cv.templatable(cv.boolean),
+            cv.Optional(CONF_SHOW_BARCODE, default=False): cv.templatable(cv.boolean),
         }
     ),
 )
@@ -709,10 +715,12 @@ async def thermal_printer_run_demo_action_to_code(
     var = cg.new_Pvariable(action_id, template_arg)
     await cg.register_parented(var, config[CONF_ID])
 
-    templ = await cg.templatable(config[CONF_SHOW_QR_CODE], args, cg.bool_)
-    cg.add(var.set_show_qr_code(templ))
-    templ = await cg.templatable(config[CONF_SHOW_BARCODE], args, cg.bool_)
-    cg.add(var.set_show_barcode(templ))
+    templ = await cg.templatable(config[CONF_SHOW_HEADER], args, cg.bool_)
+    cg.add(var.set_show_text_styles(templ))
+    templ = await cg.templatable(config[CONF_SHOW_INTRODUCTION], args, cg.bool_)
+    cg.add(var.set_show_text_styles(templ))
+    templ = await cg.templatable(config[CONF_SHOW_FOOTER], args, cg.bool_)
+    cg.add(var.set_show_text_styles(templ))
     templ = await cg.templatable(config[CONF_SHOW_TEXT_STYLES], args, cg.bool_)
     cg.add(var.set_show_text_styles(templ))
     templ = await cg.templatable(config[CONF_SHOW_INVERSE], args, cg.bool_)
@@ -721,6 +729,10 @@ async def thermal_printer_run_demo_action_to_code(
     cg.add(var.set_show_rotation(templ))
     templ = await cg.templatable(config[CONF_SHOW_UPSIDE_DOWN], args, cg.bool_)
     cg.add(var.set_show_upside_down(templ))
+    templ = await cg.templatable(config[CONF_SHOW_QR_CODE], args, cg.bool_)
+    cg.add(var.set_show_qr_code(templ))
+    templ = await cg.templatable(config[CONF_SHOW_BARCODE], args, cg.bool_)
+    cg.add(var.set_show_barcode(templ))
 
     return var
 
