@@ -12,7 +12,7 @@ BinarySensor = binary_sensor_ns.class_("BinarySensor", cg.EntityBase)
 CONF_ZONE = "zone"
 CONF_BYPASS = "bypass"
 
-ZONE_SCHEMA = binary_sensor.BINARY_SENSOR_SCHEMA.extend(
+ZONE_SCHEMA = binary_sensor.binary_sensor_schema(BinarySensor).extend(
     {
         cv.GenerateID(): cv.declare_id(BinarySensor),
         cv.GenerateID(CONF_CROW_ALARM_PANEL_ID): cv.use_id(CrowAlarmPanel),

@@ -19,6 +19,7 @@ CONF_CROW_ALARM_PANEL_ID = "crow_alarm_panel_id"
 CONF_NUM_ZONES = "number_of_zones"
 CONF_KEYPADS = "keypads"
 CONF_ON_MESSAGE = "on_message"
+CONF_PIN = "pin"
 
 crow_alarm_panel_ns = cg.esphome_ns.namespace("crow_alarm_panel")
 
@@ -30,6 +31,7 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Required(CONF_CLOCK_PIN): pins.internal_gpio_input_pin_schema,
         cv.Required(CONF_DATA_PIN): pins.internal_gpio_input_pin_schema,
         cv.Optional(CONF_ADDRESS): cv.int_range(min=0, max=8),
+        cv.Optional(CONF_PIN): cv.string,
         cv.Optional(CONF_KEYPADS, default=[]): cv.ensure_list(
             cv.Schema(
                 {
@@ -55,6 +57,9 @@ async def to_code(config):
 
     if CONF_ADDRESS in config:
         cg.add(var.set_keypad_address(config[CONF_ADDRESS]))
+
+    if CONF_PIN in config:
+        cg.add(var.set_pin(config[CONF_PIN]))
 
     for keypad in config[CONF_KEYPADS]:
         cg.add(var.add_keypad(keypad[CONF_NAME], keypad[CONF_ADDRESS]))

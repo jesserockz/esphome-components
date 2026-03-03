@@ -129,6 +129,12 @@ void CrowAlarmPanel::loop() {
     this->store_.data_length = 0;
     ets_intr_unlock();
 
+    // DIAGNOSTIC: Log time gap between messages
+    uint32_t now = millis();
+    uint32_t gap = now - this->last_message_time_;
+    ESP_LOGD(TAG, "DIAG: Message gap = %u ms", gap);
+    this->last_message_time_ = now;
+
     ESP_LOGD(TAG, "Received data: [%02x.%s]", type, format_hex_pretty(data).c_str());
 
     switch (type) {
@@ -261,8 +267,17 @@ void CrowAlarmPanel::loop() {
         break;
     }
     this->on_message_trigger_->trigger(type, data);
-  } else if (!this->tx_buffer_.empty() && !this->store_.data) {
+  }
+  
+  // DIAGNOSTIC: Log TX queue status when there's something to send
+  if (!this->tx_buffer_.empty()) {
+    uint32_t idle_time = millis() - this->last_message_time_;
+    ESP_LOGD(TAG, "DIAG: TX pending, idle_time=%ums, store_.data=%d", idle_time, this->store_.data);
+  }
+  
+  if (!this->tx_buffer_.empty() && !this->store_.data) {
     InterruptLock lock;
+    // ORIGINAL DEV'S EXACT METHOD - push-pull outputs
     this->clock_pin_->pin_mode(gpio::FLAG_OUTPUT);
     this->data_pin_->pin_mode(gpio::FLAG_OUTPUT);
     std::vector<uint8_t> to_send = this->tx_buffer_[0];
@@ -270,11 +285,12 @@ void CrowAlarmPanel::loop() {
     this->tx_buffer_.erase(this->tx_buffer_.begin());
     for (uint8_t i = 0; i < to_send.size(); i++) {
       for (uint8_t j = 0; j < 8; j++) {
+        // ORIGINAL DEV'S EXACT TIMING
         this->clock_pin_->digital_write(true);
         this->data_pin_->digital_write(to_send[i] & (1 << j));
         this->clock_pin_->digital_write(false);
         s += (to_send[i] & (1 << j)) ? "1" : "0";
-        delay(1);
+        delay(1);  // Original used 1ms delay
       }
       s += " (";
       s += format_hex(to_send.data() + i, 1);
@@ -306,11 +322,35 @@ void CrowAlarmPanel::loop() {
   }
 }
 
-void CrowAlarmPanel::arm_away() {}
+void CrowAlarmPanel::arm_away() {
+  ESP_LOGI(TAG, "Sending arm away command");
+  this->keypress(13);  // ARM key
+}
 
-void CrowAlarmPanel::arm_stay() {}
+void CrowAlarmPanel::arm_stay() {
+  ESP_LOGI(TAG, "Sending arm stay command");
+  this->keypress(14);  // STAY key
+}
 
-void CrowAlarmPanel::disarm(const std::string code) {}
+void CrowAlarmPanel::disarm() {
+  if (this->pin_.empty()) {
+    ESP_LOGW(TAG, "Cannot disarm: no PIN configured");
+    return;
+  }
+  
+  ESP_LOGI(TAG, "Sending disarm sequence");
+  
+  // Send each digit of the PIN
+  for (char c : this->pin_) {
+    if (c >= '0' && c <= '9') {
+      uint8_t key = c - '0';  // Convert char to key code (0-9)
+      this->keypress(key);
+    }
+  }
+  
+  // Send ENTER to confirm
+  this->keypress(17);  // KEY_ENTER
+}
 
 void CrowAlarmPanel::set_output(uint8_t output, bool state) {}
 

@@ -14,7 +14,7 @@ CrowAlarmPanelOutputSwitch = crow_alarm_panel_ns.class_(
 )
 
 
-CROW_SWITCH_SCHEMA = switch.SWITCH_SCHEMA.extend(
+CROW_SWITCH_SCHEMA = switch.switch_schema(CrowAlarmPanelOutputSwitch).extend(
     {
         cv.GenerateID(CONF_CROW_ALARM_PANEL_ID): cv.use_id(CrowAlarmPanel),
     }
